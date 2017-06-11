@@ -1,0 +1,44 @@
+#!/bin/sh
+#
+# This scripts adds local version information from the version
+# control systems git, mercurial (hg) and subversion (svn).
+#
+# It was originally copied from the Linux kernel v3.2.0-rc4 and modified
+# to support the U-Boot build-system.
+#
+
+usage() {
+	echo "Usage: $0 [srctree]" >&2
+	exit 1
+}
+
+srctree=.
+if test $# -gt 0; then
+	srctree=$1
+	shift
+fi
+
+scm_version()
+{
+	local rev=""
+	cd ${srctree} || echo "2015-1-1 00:00:00"
+	if rev=`git log -1 2>/dev/null|grep -E -o "([A-Z][a-z]+ [0-9]{1,2}) ([0-9:]{8,}) ([0-9]{4,})"`; then
+		# Is this git on svn?
+		if git config --get svn-remote.svn.url >/dev/null; then
+			rev=`git svn info 2>/dev/null|grep -E -o "[0-9]{4,}-[0-9]{1,2}-[0-9]{1,2} [0-9:]{8,}"`;
+			echo "${rev}";
+		else
+			echo -n `echo ${rev} | grep -E -o "([A-Z][a-z]+ [0-9]{1,2})"`;
+			echo -n " ";
+			echo -n `echo ${rev} | grep -E -o "([0-9]{4,})"`;
+			echo -n " ";
+			echo -n `echo ${rev} | grep -E -o "([0-9:]{8,})"`;
+		fi
+	elif rev=`svn info 2>/dev/null|grep -E -o "[0-9]{4,}-[0-9]{1,2}-[0-9]{1,2} [0-9:]{8,}"`; then
+		echo "${rev}";
+	else
+		echo "2015-1-1 00:00:00"
+	fi
+}
+
+echo "$(scm_version)"
